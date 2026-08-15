@@ -96,7 +96,12 @@ export default function App() {
               mode={mode}
             />
 
-            <ExplanationPanel currentPreset={currentPreset} />
+            <ExplanationPanel
+              currentPreset={currentPreset}
+              transform={transform}
+              transition={transition}
+              companion={companion}
+            />
 
             <TransformOrderComparison />
           </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Sliders, Move, RotateCw, Maximize2, Clock, Zap, Users, Compass, HelpCircle } from 'lucide-react';
+import { Sliders, Move, Clock, Users, AlertCircle } from 'lucide-react';
 import { TransformState, TransitionState, CompanionState } from '../types';
+import { parseAndValidateCubicBezier } from '../utils/motionModel';
 
 interface ControlsPanelProps {
   transform: TransformState;
@@ -32,6 +33,8 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
   const handleCompanionChange = (key: keyof CompanionState, val: any) => {
     onChangeCompanion({ ...companion, [key]: val });
   };
+
+  const bezierCheck = parseAndValidateCubicBezier(transition.customBezier);
 
   const easingDescriptions: Record<string, string> = {
     'ease': '自然に加減速（標準）',
@@ -100,7 +103,7 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
               <div className="flex justify-between text-xs">
                 <span className="text-zinc-300 font-medium flex items-center gap-1">
                   X移動 (translateX)
-                  <span className="text-[10px] text-zinc-500">横方向の平行移動</span>
+                  <span className="text-[10px] text-zinc-500">横方向</span>
                 </span>
                 <span className="font-mono text-indigo-400 font-semibold">{transform.translateX}px</span>
               </div>
@@ -180,7 +183,7 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
               <div className="flex justify-between text-xs">
                 <span className="text-zinc-300 font-medium flex items-center gap-1">
                   傾き (skewX)
-                  <span className="text-[10px] text-zinc-500">遠近感やスピード感</span>
+                  <span className="text-[10px] text-zinc-500">遠近感</span>
                 </span>
                 <span className="font-mono text-indigo-400 font-semibold">{transform.skewX}°</span>
               </div>
@@ -203,7 +206,7 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-indigo-400" />
-                トランジション（時間と速度変化）
+                トランジション（時間と速度）
               </h3>
               <span className="text-[10px] text-zinc-500">duration / easing / delay</span>
             </div>
@@ -245,7 +248,7 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
             {/* Easing */}
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-300 font-medium">イージング（加減速カーブ）</span>
+                <span className="text-zinc-300 font-medium">イージング曲線</span>
                 <span className="text-[10px] text-indigo-400 font-medium">
                   {easingDescriptions[transition.easing] || 'カスタム'}
                 </span>
@@ -256,15 +259,16 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
                   { id: 'ease-out', label: 'ease-out (減速)' },
                   { id: 'ease-in', label: 'ease-in (加速)' },
                   { id: 'ease-in-out', label: 'ease-in-out (滑らか)' },
-                  { id: 'linear', label: 'linear (一定速度)' },
+                  { id: 'linear', label: 'linear (一定)' },
                   { id: 'cubic-bezier(0.16, 1, 0.3, 1)', label: 'Smooth Out' },
                   { id: 'cubic-bezier(0.34, 1.56, 0.64, 1)', label: 'Bouncy' },
+                  { id: 'custom', label: 'Custom Bezier' },
                 ].map((item) => (
                   <button
                     key={item.id}
                     onClick={() => handleTransitionChange('easing', item.id)}
                     className={`px-3 py-2 rounded-xl text-xs font-medium text-left transition-all border ${
-                      transition.easing === item.id
+                      transition.easing === item.id || (item.id === 'custom' && transition.easing === 'custom')
                         ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-sm'
                         : 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
                     }`}
@@ -274,6 +278,33 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
                 ))}
               </div>
             </div>
+
+            {/* Custom Cubic Bezier Input */}
+            {transition.easing === 'custom' && (
+              <div className="space-y-2 bg-zinc-950/80 p-3.5 rounded-xl border border-zinc-800">
+                <label className="text-xs text-zinc-300 font-medium block">
+                  カスタム Cubic-Bezier (4つの数値: x1, y1, x2, y2)
+                </label>
+                <input
+                  type="text"
+                  value={transition.customBezier}
+                  onChange={(e) => handleTransitionChange('customBezier', e.target.value)}
+                  placeholder="0.16, 1, 0.3, 1"
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-indigo-500"
+                />
+                {!bezierCheck.isValid && (
+                  <p className="text-[11px] text-amber-400 flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    {bezierCheck.error}
+                  </p>
+                )}
+                {bezierCheck.isValid && (
+                  <p className="text-[11px] text-emerald-400 font-mono">
+                    適用中: cubic-bezier({bezierCheck.values.join(', ')})
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 

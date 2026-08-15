@@ -1,19 +1,49 @@
 import React from 'react';
-import { Info, AlertTriangle, Lightbulb, Compass } from 'lucide-react';
-import { PresetConfig } from '../types';
+import { Info, AlertTriangle, Lightbulb, Compass, SlidersHorizontal } from 'lucide-react';
+import { PresetConfig, TransformState, TransitionState, CompanionState } from '../types';
 
 interface ExplanationPanelProps {
   currentPreset: PresetConfig;
+  transform: TransformState;
+  transition: TransitionState;
+  companion: CompanionState;
 }
 
-export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({ currentPreset }) => {
+export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
+  currentPreset,
+  transform,
+  transition,
+  companion,
+}) => {
   return (
-    <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+    <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-5">
       <div className="flex items-center space-x-2 border-b border-zinc-800 pb-3">
         <Compass className="w-4 h-4 text-indigo-400" />
         <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
-          モーション解説：{currentPreset.name}
+          選択中プリセットの解説：{currentPreset.name}
         </h3>
+      </div>
+
+      {/* 現在の調整値ブロック（プリセット値との違いを示す） */}
+      <div className="bg-zinc-950/80 border border-indigo-500/20 rounded-xl p-4 space-y-2.5">
+        <div className="flex items-center space-x-1.5 text-indigo-400 text-xs font-semibold">
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          <span>現在の調整値パラメータ（スライダー等での変更が即時反映されます）</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] font-mono text-zinc-300">
+          <div className="bg-zinc-900/80 p-2 rounded border border-zinc-800">
+            <span className="text-zinc-500 block text-[10px]">Translate</span>
+            X: {transform.translateX}px / Y: {transform.translateY}px
+          </div>
+          <div className="bg-zinc-900/80 p-2 rounded border border-zinc-800">
+            <span className="text-zinc-500 block text-[10px]">Rotate / Scale</span>
+            {transform.rotate}° / {transform.scale}x
+          </div>
+          <div className="bg-zinc-900/80 p-2 rounded border border-zinc-800">
+            <span className="text-zinc-500 block text-[10px]">Duration / Delay</span>
+            {transition.duration}s / {transition.delay}s
+          </div>
+        </div>
       </div>
 
       <div className="space-y-3 text-xs text-zinc-300">
