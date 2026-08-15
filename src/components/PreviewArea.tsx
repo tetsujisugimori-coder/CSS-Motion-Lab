@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { MousePointer, Hand, Play, Layers, ArrowRight, Smartphone } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MousePointer, Hand, Play, Layers, ArrowRight, Info } from 'lucide-react';
 import { OperationMode, TransformState, TransitionState, CompanionState } from '../types';
-import { computeMotion } from '../utils/motionModel';
+import { computeMotion, getEasingValue } from '../utils/motionModel';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface PreviewAreaProps {
   mode: OperationMode;
@@ -21,51 +22,67 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
   const [isClicked, setIsClicked] = useState(false);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const reducedMotion = useReducedMotion();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Mode切り替え時にクリック状態やプレビュー状態をリセット
   useEffect(() => {
     setIsClicked(false);
-    if (mode === 'preview') {
-      setIsPlayingPreview(true);
-      const timer = setTimeout(() => {
-        setIsPlayingPreview(false);
-      }, (transition.duration + transition.delay + 0.3) * 1000);
-      return () => clearTimeout(timer);
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    if (mode === 'preview' && !reducedMotion) {
+      triggerPreviewCycle();
     } else {
       setIsPlayingPreview(false);
     }
-  }, [mode]);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [mode, reducedMotion]);
 
   // 設定変更時もプレビューの再生状態が競合しないように制御
   useEffect(() => {
-    if (mode === 'preview') {
-      setIsPlayingPreview(true);
-      const timer = setTimeout(() => {
-        setIsPlayingPreview(false);
-      }, (transition.duration + transition.delay + 0.3) * 1000);
-      return () => clearTimeout(timer);
+    if (mode === 'preview' && !reducedMotion) {
+      triggerPreviewCycle();
     }
   }, [transform, transition, companion]);
 
-  const handleMainClick = () => {
-    if (mode === 'click') {
-      setIsClicked(!isClicked);
-    } else if (mode === 'preview' && !isPlayingPreview) {
+  const triggerPreviewCycle = () => {
+    if (reducedMotion) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    setIsPlayingPreview(false);
+    // 次のフレームで再トリガーして確実にアニメーションをリセット
+    const t1 = setTimeout(() => {
       setIsPlayingPreview(true);
-      setTimeout(() => setIsPlayingPreview(false), (transition.duration + transition.delay + 0.3) * 1000);
-    }
+      const totalTimeMs =
+        (transition.duration + Math.max(transition.delay, transition.delay + companion.delay) + 0.4) *
+        1000;
+
+      timerRef.current = setTimeout(() => {
+        setIsPlayingPreview(false);
+      }, totalTimeMs);
+    }, 20);
+
+    return () => clearTimeout(t1);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleMainClick();
+  const handleMainClick = () => {
+    if (mode === 'click') {
+      setIsClicked((prev) => !prev);
+    } else if (mode === 'preview' && !reducedMotion) {
+      triggerPreviewCycle();
     }
   };
 
   const computed = computeMotion(transform, transition, companion);
-  const mainTransition = `transform ${transition.duration}s ${computed.easingVal} ${transition.delay}s`;
-  const compTransition = `transform ${transition.duration}s ${computed.easingVal} ${transition.delay + companion.delay}s, opacity ${transition.duration}s ease`;
+  const easingVal = getEasingValue(transition);
+  const effDuration = reducedMotion ? 0.01 : transition.duration;
+  const mainTransition = `transform ${effDuration}s ${easingVal} ${transition.delay}s`;
+  const compTransition = `transform ${effDuration}s ${easingVal} ${
+    transition.delay + companion.delay
+  }s, opacity ${effDuration}s ease`;
 
   // アクティブ判定
   const isActive =
@@ -136,13 +153,13 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
         </div>
         <div className="flex items-center space-x-3">
           {mode === 'hover' && (
-            <span className="text-[10px] text-amber-400 flex items-center gap-1">
-              <Smartphone className="w-3 h-3" /> モバイルではタップで代用
+            <span className="text-[11px] text-amber-300 flex items-center gap-1.5 bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-500/30">
+              <Info className="w-3.5 h-3.5 shrink-0" /> Hoverモードはマウス操作向けです。ClickまたはPreviewを使ってください
             </span>
           )}
-          {mode === 'preview' && (
+          {mode === 'preview' && !reducedMotion && (
             <button
-              onClick={handleMainClick}
+              onClick={triggerPreviewCycle}
               disabled={isPlayingPreview}
               className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg font-medium shadow transition"
             >
@@ -175,7 +192,6 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
             <button
               type="button"
               onClick={handleMainClick}
-              onKeyDown={handleKeyDown}
               style={{
                 transform: mainTransformStyle,
                 transition: mainTransition,

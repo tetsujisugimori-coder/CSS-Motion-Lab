@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { Sliders, Move, Clock, Users, AlertCircle } from 'lucide-react';
+import { Sliders, Move, Clock, Users, AlertCircle, HelpCircle } from 'lucide-react';
 import { TransformState, TransitionState, CompanionState } from '../types';
 import { parseAndValidateCubicBezier } from '../utils/motionModel';
+import { TransitionTimeline } from './TransitionTimeline';
+import { TransitionMeasurer } from './TransitionMeasurer';
+import { EasingVisualizer } from './EasingVisualizer';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface ControlsPanelProps {
   transform: TransformState;
@@ -21,16 +25,17 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
   onChangeCompanion,
 }) => {
   const [activeTab, setActiveTab] = useState<'transform' | 'transition' | 'companion'>('transform');
+  const reducedMotion = useReducedMotion();
 
   const handleTransformChange = (key: keyof TransformState, val: number) => {
     onChangeTransform({ ...transform, [key]: val });
   };
 
-  const handleTransitionChange = (key: keyof TransitionState, val: any) => {
+  const handleTransitionChange = (key: keyof TransitionState, val: string | number) => {
     onChangeTransition({ ...transition, [key]: val });
   };
 
-  const handleCompanionChange = (key: keyof CompanionState, val: any) => {
+  const handleCompanionChange = <K extends keyof CompanionState>(key: K, val: CompanionState[K]) => {
     onChangeCompanion({ ...companion, [key]: val });
   };
 
@@ -50,7 +55,7 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
   return (
     <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col overflow-hidden shadow-xl">
       {/* Tabs */}
-      <div className="flex border-b border-zinc-800 bg-zinc-950/60">
+      <div className="flex border-b border-zinc-800 bg-zinc-950/65">
         <button
           onClick={() => setActiveTab('transform')}
           className={`flex-1 py-3 px-4 text-xs font-semibold flex items-center justify-center space-x-2 transition-colors border-b-2 ${
@@ -86,7 +91,7 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
         </button>
       </div>
 
-      <div className="p-6 space-y-6 flex-1 overflow-y-auto max-h-[550px]">
+      <div className="p-6 space-y-6 flex-1 overflow-y-auto max-h-[620px]">
         {/* TRANSFORM TAB */}
         {activeTab === 'transform' && (
           <div className="space-y-5">
@@ -202,53 +207,73 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
 
         {/* TRANSITION TAB */}
         {activeTab === 'transition' && (
-          <div className="space-y-5">
+          <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-indigo-400" />
-                トランジション（時間と速度）
+                トランジションの時間の展示
               </h3>
-              <span className="text-[10px] text-zinc-500">duration / easing / delay</span>
+              <span className="text-[10px] text-zinc-500">duration / delay / easing</span>
             </div>
 
-            {/* Duration */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-300 font-medium">継続時間 (duration)</span>
-                <span className="font-mono text-indigo-400 font-semibold">{transition.duration}s</span>
+            {/* A. Short Explanation Box */}
+            <div className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-3.5 space-y-2 text-xs text-indigo-200">
+              <div className="flex items-center space-x-1.5 font-semibold text-indigo-300">
+                <HelpCircle className="w-4 h-4" />
+                <span>時間の流れと動きの関係</span>
               </div>
-              <input
-                type="range"
-                min={0.05}
-                max={1.5}
-                step={0.05}
-                value={transition.duration}
-                onChange={(e) => handleTransitionChange('duration', Number(e.target.value))}
-                className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
-              />
-            </div>
-
-            {/* Delay */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-300 font-medium">遅延時間 (delay)</span>
-                <span className="font-mono text-indigo-400 font-semibold">{transition.delay}s</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-indigo-100/90 leading-relaxed">
+                <div>• <strong className="text-white">Delay (遅延)</strong>: 動き始めるまでの待機時間</div>
+                <div>• <strong className="text-white">Duration (時間)</strong>: 実際に動いている時間</div>
+                <div>• <strong className="text-white">Easing (イージング)</strong>: 速度の緩急タイミング</div>
+                <div>• <strong className="text-white">追従Delay</strong>: 主役との開始時間のずれ</div>
               </div>
-              <input
-                type="range"
-                min={0}
-                max={0.5}
-                step={0.05}
-                value={transition.delay}
-                onChange={(e) => handleTransitionChange('delay', Number(e.target.value))}
-                className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
-              />
             </div>
 
-            {/* Easing */}
-            <div className="space-y-2">
+            {/* B. Timeline Display */}
+            <TransitionTimeline transition={transition} companion={companion} />
+
+            {/* Controls for Duration & Delay */}
+            <div className="space-y-4 bg-zinc-950/60 p-4 rounded-xl border border-zinc-800">
+              {/* Duration */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-300 font-medium">継続時間 (duration)</span>
+                  <span className="font-mono text-indigo-400 font-semibold">{transition.duration}s</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.05}
+                  max={1.5}
+                  step={0.05}
+                  value={transition.duration}
+                  onChange={(e) => handleTransitionChange('duration', Number(e.target.value))}
+                  className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              {/* Delay */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-300 font-medium">遅延時間 (delay)</span>
+                  <span className="font-mono text-indigo-400 font-semibold">{transition.delay}s</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={0.5}
+                  step={0.05}
+                  value={transition.delay}
+                  onChange={(e) => handleTransitionChange('delay', Number(e.target.value))}
+                  className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* D. Easing & Visualizer */}
+            <div className="space-y-3">
               <div className="flex justify-between text-xs">
-                <span className="text-zinc-300 font-medium">イージング曲線</span>
+                <span className="text-zinc-300 font-medium">イージング曲線 (easing)</span>
                 <span className="text-[10px] text-indigo-400 font-medium">
                   {easingDescriptions[transition.easing] || 'カスタム'}
                 </span>
@@ -305,6 +330,16 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
                 )}
               </div>
             )}
+
+            {/* Easing Visualizer Curve Graph */}
+            <EasingVisualizer transition={transition} />
+
+            {/* C. Transition Measurer Demo */}
+            <TransitionMeasurer
+              transition={transition}
+              companion={companion}
+              reducedMotion={reducedMotion}
+            />
           </div>
         )}
 

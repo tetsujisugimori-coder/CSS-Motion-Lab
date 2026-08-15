@@ -1,6 +1,7 @@
 import React from 'react';
 import { Info, AlertTriangle, Lightbulb, Compass, SlidersHorizontal } from 'lucide-react';
 import { PresetConfig, TransformState, TransitionState, CompanionState } from '../types';
+import { getEasingValue } from '../utils/motionModel';
 
 interface ExplanationPanelProps {
   currentPreset: PresetConfig;
@@ -15,6 +16,8 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
   transition,
   companion,
 }) => {
+  const easingVal = getEasingValue(transition);
+
   return (
     <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-5">
       <div className="flex items-center space-x-2 border-b border-zinc-800 pb-3">
@@ -30,7 +33,7 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
           <SlidersHorizontal className="w-3.5 h-3.5" />
           <span>現在の調整値パラメータ（スライダー等での変更が即時反映されます）</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] font-mono text-zinc-300">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono text-zinc-300">
           <div className="bg-zinc-900/80 p-2 rounded border border-zinc-800">
             <span className="text-zinc-500 block text-[10px]">Translate</span>
             X: {transform.translateX}px / Y: {transform.translateY}px
@@ -42,6 +45,12 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
           <div className="bg-zinc-900/80 p-2 rounded border border-zinc-800">
             <span className="text-zinc-500 block text-[10px]">Duration / Delay</span>
             {transition.duration}s / {transition.delay}s
+          </div>
+          <div className="bg-zinc-900/80 p-2 rounded border border-zinc-800">
+            <span className="text-zinc-500 block text-[10px]">Easing / Comp.Delay</span>
+            <span className="truncate block" title={easingVal}>
+              {transition.easing} (+{companion.delay}s)
+            </span>
           </div>
         </div>
       </div>

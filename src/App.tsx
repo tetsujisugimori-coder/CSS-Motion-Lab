@@ -7,6 +7,8 @@ import { ExplanationPanel } from './components/ExplanationPanel';
 import { TransformOrderComparison } from './components/TransformOrderComparison';
 import { PRESETS } from './data/presets';
 import { PresetId, OperationMode, TransformState, TransitionState, CompanionState } from './types';
+import { useReducedMotion } from './hooks/useReducedMotion';
+import { ShieldAlert } from 'lucide-react';
 
 export default function App() {
   const [currentPresetId, setCurrentPresetId] = useState<PresetId>('gentle-lift');
@@ -16,6 +18,8 @@ export default function App() {
   const [transform, setTransform] = useState<TransformState>({ ...currentPreset.transform });
   const [transition, setTransition] = useState<TransitionState>({ ...currentPreset.transition });
   const [companion, setCompanion] = useState<CompanionState>({ ...currentPreset.companion });
+
+  const reducedMotion = useReducedMotion();
 
   const handleSelectPreset = (id: PresetId) => {
     const p = PRESETS.find((item) => item.id === id);
@@ -46,6 +50,16 @@ export default function App() {
       {/* Main Content Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
+        {/* Reduced motion banner if active */}
+        {reducedMotion && (
+          <div className="bg-amber-950/30 border border-amber-500/30 rounded-xl p-3.5 flex items-center space-x-3 text-xs text-amber-200">
+            <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              OSのモーション軽減設定（prefers-reduced-motion: reduce）が有効です。プレビューの自動再生が停止され、アニメーション時間が極小化されています。
+            </span>
+          </div>
+        )}
+
         {/* Preset Selector Bar for Mobile */}
         <div className="flex md:hidden flex-wrap items-center gap-2 bg-zinc-900/80 p-3 rounded-2xl border border-zinc-800">
           <span className="text-xs text-zinc-400 font-medium">プリセット:</span>
@@ -67,7 +81,7 @@ export default function App() {
         {/* 3-Column / Responsive Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Left Column: Controls (PC: 4 cols, Mobile: full) */}
+          {/* Left Column: Controls (PC: 5 cols, Mobile: full) */}
           <div className="lg:col-span-5 space-y-6">
             <ControlsPanel
               transform={transform}
