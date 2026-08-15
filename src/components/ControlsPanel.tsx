@@ -211,34 +211,72 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-indigo-400" />
-                トランジションの時間の展示
+                Transitionは何を表現する仕組みか
               </h3>
-              <span className="text-[10px] text-zinc-500">duration / delay / easing</span>
+              <span className="text-[10px] text-zinc-500">仕組みと時間の設計</span>
             </div>
 
-            {/* A. Short Explanation Box */}
-            <div className="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-3.5 space-y-2 text-xs text-indigo-200">
-              <div className="flex items-center space-x-1.5 font-semibold text-indigo-300">
-                <HelpCircle className="w-4 h-4" />
-                <span>時間の流れと動きの関係</span>
+            {/* 1. Transitionとは何か 導入展示 */}
+            <div className="bg-gradient-to-br from-indigo-950/50 to-zinc-950 border border-indigo-500/30 rounded-2xl p-4 space-y-3 text-xs text-indigo-100">
+              <div className="flex items-center space-x-2 font-bold text-indigo-300 text-sm">
+                <HelpCircle className="w-4 h-4 text-indigo-400" />
+                <span>Transitionの本質：変化の「時間と速度」の設計図</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-indigo-100/90 leading-relaxed">
-                <div>• <strong className="text-white">Delay (遅延)</strong>: 動き始めるまでの待機時間</div>
-                <div>• <strong className="text-white">Duration (時間)</strong>: 実際に動いている時間</div>
-                <div>• <strong className="text-white">Easing (イージング)</strong>: 速度の緩急タイミング</div>
-                <div>• <strong className="text-white">追従Delay</strong>: 主役との開始時間のずれ</div>
+              <p className="text-zinc-300 leading-relaxed text-[11px]">
+                <strong className="text-white">Transform</strong> が「どこへ・どんな形へ変わるか（到着点）」を決めるのに対し、
+                <strong className="text-white">Transition</strong> は「通常状態から到着点まで、どのくらい待ち、どのくらいの時間をかけ、どんな速度変化で移るか」を決める仕組みです。
+              </p>
+
+              {/* Flow diagram */}
+              <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80 font-mono text-[10px] text-zinc-300 flex flex-wrap items-center justify-center gap-2">
+                <span className="px-2 py-1 bg-zinc-900 rounded border border-zinc-700 text-zinc-200">通常状態</span>
+                <span className="text-indigo-400">↓ きっかけ (Hover/Click/JS)</span>
+                <span className="px-2 py-1 bg-zinc-900 rounded border border-zinc-700 text-zinc-200">状態変化</span>
+                <span className="text-indigo-400">↓ transition</span>
+                <span className="px-2.5 py-1 bg-indigo-600/30 rounded border border-indigo-500 text-indigo-200 font-bold">待機 → 変化中 → 到着</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-zinc-300 pt-1">
+                <div className="bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+                  <strong className="text-white block mb-0.5">💡 きっかけの必要性</strong>
+                  Transition単体では勝手に動きません。Hover、Click、JSのclass付与など「状態を変えるきっかけ」が必ず必要です。
+                </div>
+                <div className="bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+                  <strong className="text-white block mb-0.5">⚡ @keyframesとの違い</strong>
+                  ボタンの反応やカードの浮き上がりなど1回きりの変化にはTransitionが最適。複雑なループや連続アニメーションには @keyframes を使います。
+                </div>
               </div>
             </div>
 
-            {/* B. Timeline Display */}
-            <TransitionTimeline transition={transition} companion={companion} />
+            {/* 2. 現在の設定要約 */}
+            <div className="bg-zinc-950/70 border border-zinc-800 rounded-xl p-3.5 flex items-center justify-between text-xs">
+              <span className="text-zinc-400 font-medium">現在の設定値概要:</span>
+              <span className="font-mono text-indigo-300 font-semibold">
+                duration: {transition.duration}s | delay: {transition.delay}s | easing: {transition.easing}
+              </span>
+            </div>
 
-            {/* Controls for Duration & Delay */}
+            {/* 3. モーション・タイムライン */}
+            <div className="space-y-1.5">
+              <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                3. モーション・タイムライン
+              </h4>
+              <TransitionTimeline transition={transition} companion={companion} />
+            </div>
+
+            {/* 4. Duration / Delay / Easing の操作 */}
             <div className="space-y-4 bg-zinc-950/60 p-4 rounded-xl border border-zinc-800">
+              <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                4. 時間パラメータと速度の調整
+              </h4>
+
               {/* Duration */}
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
-                  <span className="text-zinc-300 font-medium">継続時間 (duration)</span>
+                  <span className="text-zinc-300 font-medium flex items-center gap-1">
+                    変化にかかる時間 (duration)
+                    <span className="text-[10px] text-zinc-500">秒数</span>
+                  </span>
                   <span className="font-mono text-indigo-400 font-semibold">{transition.duration}s</span>
                 </div>
                 <input
@@ -250,12 +288,16 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
                   onChange={(e) => handleTransitionChange('duration', Number(e.target.value))}
                   className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
                 />
+                <p className="text-[10px] text-zinc-400">※ 変化時間を長くすると、ゆったりした印象になります。</p>
               </div>
 
               {/* Delay */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 pt-2 border-t border-zinc-800/80">
                 <div className="flex justify-between text-xs">
-                  <span className="text-zinc-300 font-medium">遅延時間 (delay)</span>
+                  <span className="text-zinc-300 font-medium flex items-center gap-1.5">
+                    動き始めるまでの待ち時間 (delay)
+                    <span className="text-[10px] text-zinc-500">秒数</span>
+                  </span>
                   <span className="font-mono text-indigo-400 font-semibold">{transition.delay}s</span>
                 </div>
                 <input
@@ -267,10 +309,11 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
                   onChange={(e) => handleTransitionChange('delay', Number(e.target.value))}
                   className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
                 />
+                <p className="text-[10px] text-zinc-400">※ 待ち時間を長くすると、反応が遅く感じられます。</p>
               </div>
             </div>
 
-            {/* D. Easing & Visualizer */}
+            {/* Easing Selection */}
             <div className="space-y-3">
               <div className="flex justify-between text-xs">
                 <span className="text-zinc-300 font-medium">イージング曲線 (easing)</span>
@@ -278,6 +321,7 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
                   {easingDescriptions[transition.easing] || 'カスタム'}
                 </span>
               </div>
+              <p className="text-[10px] text-zinc-400">※ Easingを変えると、同じ時間でも軽さ・重さ・勢いが変わります。</p>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { id: 'ease', label: 'ease (標準)' },
@@ -331,15 +375,33 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
               </div>
             )}
 
-            {/* Easing Visualizer Curve Graph */}
-            <EasingVisualizer transition={transition} />
+            {/* 5. Easing 曲線ビジュアライザ */}
+            <div className="space-y-1.5">
+              <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                5. イージング曲線ビジュアライザ
+              </h4>
+              <EasingVisualizer transition={transition} />
+            </div>
 
-            {/* C. Transition Measurer Demo */}
-            <TransitionMeasurer
-              transition={transition}
-              companion={companion}
-              reducedMotion={reducedMotion}
-            />
+            {/* 6. 動きの測定器 */}
+            <div className="space-y-1.5">
+              <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+                6. 動きの測定器
+              </h4>
+              <TransitionMeasurer
+                transition={transition}
+                companion={companion}
+                reducedMotion={reducedMotion}
+              />
+            </div>
+
+            {/* 7. 生成されるCSSへの案内 */}
+            <div className="bg-zinc-950/80 p-3.5 rounded-xl border border-zinc-800 text-[11px] text-zinc-400 space-y-1">
+              <strong className="text-zinc-200 block">7. 実際に生成されるCSSの読み方</strong>
+              <p>
+                下部のコードパネルでは、ここで調整した <code>transition: property duration timing-function delay;</code> がそのままCSSプロパティとして出力されます。
+              </p>
+            </div>
           </div>
         )}
 

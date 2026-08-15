@@ -7,11 +7,11 @@ export interface CubicBezierValidation {
 }
 
 export function parseAndValidateCubicBezier(bezierStr: string): CubicBezierValidation {
-  const parts = bezierStr.split(',').map((p) => parseFloat(p.trim()));
-  if (parts.length !== 4 || parts.some((p) => isNaN(p))) {
+  const parts = bezierStr.split(',').map((p) => Number(p.trim()));
+  if (parts.length !== 4 || parts.some((p) => !Number.isFinite(p))) {
     return {
       isValid: false,
-      error: 'カンマ区切りの4つの数値を入力してください（例: 0.16, 1, 0.3, 1）',
+      error: 'カンマ区切りの4つの有限数値を入力してください（例: 0.16, 1, 0.3, 1）',
       values: [0.16, 1, 0.3, 1],
     };
   }
@@ -110,7 +110,7 @@ export function generateCodePackage(
     cssSelectorCompActive = '.motion-pair.is-active .companion-card';
   }
 
-  const css = `/* 1. ベースレイアウトとリセット */
+  const css = `/* 1. ベースレイアウト */
 .motion-pair {
   display: flex;
   gap: 1.5rem;
@@ -119,7 +119,12 @@ export function generateCodePackage(
   padding: 2rem;
 }
 
-/* 2. 主役カード（通常状態） */
+/* 2. 主役カード（通常状態）
+   transition: property duration timing-function delay;
+   - property: 変化させる対象（transform）
+   - duration: 変化にかかる時間 (${transition.duration}s)
+   - timing-function: 速度カーブ (${computed.easingVal})
+   - delay: 動き始めるまでの待ち時間 (${transition.delay}s) */
 .main-card {
   width: 210px;
   height: 170px;
@@ -138,7 +143,7 @@ export function generateCodePackage(
   will-change: transform;
 }
 
-/* 3. 主役カード（アクティブ／ホバー時） */
+/* 3. 主役カード（アクティブ状態／到着点） */
 ${cssSelectorMainActive} {
   transform: translateX(${transform.translateX}px) translateY(${transform.translateY}px) rotate(${transform.rotate}deg) scale(${transform.scale}) skewX(${transform.skewX}deg);
 }
@@ -160,7 +165,7 @@ ${cssSelectorMainActive} {
   will-change: transform, opacity;
 }
 
-/* 5. 追従カード（アクティブ／ホバー時） */
+/* 5. 追従カード（アクティブ状態） */
 ${cssSelectorCompActive} {
   transform: translateX(${computed.compX.toFixed(1)}px) translateY(${computed.compY.toFixed(1)}px) rotate(${computed.compRot.toFixed(1)}deg) scale(${computed.compScale.toFixed(2)});
   opacity: ${Math.min(1, companion.opacity + 0.15)};
@@ -176,48 +181,40 @@ ${cssSelectorCompActive} {
 
   let js = '';
   if (mode === 'click') {
-    js = `// Click モードのインタラクション制御
+    js = `// Click モード: ユーザーのクリック（またはボタンの標準イベント）で状態クラスをトグル
 const motionPair = document.querySelector('.motion-pair');
 const mainCard = motionPair.querySelector('.main-card');
 
 mainCard.addEventListener('click', () => {
   motionPair.classList.toggle('is-active');
-});
-
-// キーボード操作（Enter / Space）対応
-mainCard.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    motionPair.classList.toggle('is-active');
-  }
 });`;
   } else if (mode === 'preview') {
-    js = `// Preview モード（自動再生・クリック再生まわり）
+    const totalTimeMs = (transition.duration + Math.max(transition.delay, transition.delay + companion.delay) + 0.4) * 1000;
+    js = `// Preview モード: 状態の変化を自動再生・再トリガーする仕組み
 const motionPair = document.querySelector('.motion-pair');
 const mainCard = motionPair.querySelector('.main-card');
+let timer = null;
 
 function playPreview() {
-  motionPair.classList.add('is-active');
-  setTimeout(() => {
-    motionPair.classList.remove('is-active');
-  }, ${(transition.duration + transition.delay + 0.4) * 1000});
+  if (timer) clearTimeout(timer);
+  motionPair.classList.remove('is-active');
+  
+  // 次のフレームでクラスを再付与して確実にアニメーションを最初から再生
+  requestAnimationFrame(() => {
+    motionPair.classList.add('is-active');
+    timer = setTimeout(() => {
+      motionPair.classList.remove('is-active');
+    }, ${Math.round(totalTimeMs)});
+  });
 }
 
-// 初回自動再生
 window.addEventListener('DOMContentLoaded', () => {
   playPreview();
 });
 
-// カードクリックまたはキーボードで再生まわり
-mainCard.addEventListener('click', playPreview);
-mainCard.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    playPreview();
-  }
-});`;
+mainCard.addEventListener('click', playPreview);`;
   } else {
-    js = `// Hover モードは純粋に CSS (.motion-pair:hover) で完結するため JavaScript は不要です。`;
+    js = `// Hover モード: CSSの :hover 疑似クラスにより、マウスオーバーで自動的にトリガーされます。`;
   }
 
   return { html, css, js };

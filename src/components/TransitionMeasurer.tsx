@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, RotateCcw, Activity } from 'lucide-react';
+import { Play, Activity } from 'lucide-react';
 import { TransitionState, CompanionState } from '../types';
 import { getEasingValue } from '../utils/motionModel';
 
@@ -15,14 +15,14 @@ export const TransitionMeasurer: React.FC<TransitionMeasurerProps> = ({
   reducedMotion,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [mainState, setMainState] = useState<'idle' | 'delaying' | 'moving' | 'done'>('idle');
-  const [compState, setCompState] = useState<'idle' | 'delaying' | 'moving' | 'done'>('idle');
+  const [mainState, setMainState] = useState<'idle' | 'moving' | 'done'>('idle');
+  const [compState, setCompState] = useState<'idle' | 'moving' | 'done'>('idle');
 
   const triggerPlay = () => {
     if (reducedMotion) return;
     setIsPlaying(true);
-    setMainState('delaying');
-    setCompState('delaying');
+    setMainState('idle');
+    setCompState('idle');
 
     const mainDelayMs = transition.delay * 1000;
     const durationMs = transition.duration * 1000;
@@ -31,7 +31,7 @@ export const TransitionMeasurer: React.FC<TransitionMeasurerProps> = ({
 
     const t1 = setTimeout(() => {
       setMainState('moving');
-    }, mainDelayMs);
+    }, Math.max(10, mainDelayMs));
 
     const t2 = setTimeout(() => {
       setMainState('done');
@@ -39,7 +39,7 @@ export const TransitionMeasurer: React.FC<TransitionMeasurerProps> = ({
 
     const t3 = setTimeout(() => {
       setCompState('moving');
-    }, compDelayMs);
+    }, Math.max(10, compDelayMs));
 
     const t4 = setTimeout(() => {
       setCompState('done');
@@ -70,14 +70,15 @@ export const TransitionMeasurer: React.FC<TransitionMeasurerProps> = ({
 
   const easingStr = getEasingValue(transition);
   const effDuration = reducedMotion ? 0.01 : transition.duration;
+  
   const mainStyle = {
-    transition: `transform ${effDuration}s ${easingStr} ${transition.delay}s`,
+    transition: `transform ${effDuration}s ${easingStr}`,
     transform: mainState === 'moving' || mainState === 'done' ? 'translateX(260px)' : 'translateX(0px)',
   };
 
   const compTotalDelay = transition.delay + companion.delay;
   const compStyle = {
-    transition: `transform ${effDuration}s ${easingStr} ${compTotalDelay}s`,
+    transition: `transform ${effDuration}s ${easingStr}`,
     transform: compState === 'moving' || compState === 'done' ? 'translateX(260px)' : 'translateX(0px)',
   };
 
@@ -119,8 +120,7 @@ export const TransitionMeasurer: React.FC<TransitionMeasurerProps> = ({
               主役 (Delay: {transition.delay}s)
             </span>
             <span className="text-indigo-400 text-[10px]">
-              {mainState === 'idle' && '待機中'}
-              {mainState === 'delaying' && '遅延待機...'}
+              {mainState === 'idle' && (isPlaying ? '待機中...' : '待機 / 停止中')}
               {mainState === 'moving' && '移動中...'}
               {mainState === 'done' && '完了'}
             </span>
@@ -144,8 +144,7 @@ export const TransitionMeasurer: React.FC<TransitionMeasurerProps> = ({
               追従 (Delay: {compTotalDelay.toFixed(2)}s)
             </span>
             <span className="text-violet-400 text-[10px]">
-              {compState === 'idle' && '待機中'}
-              {compState === 'delaying' && '遅延待機...'}
+              {compState === 'idle' && (isPlaying ? '待機中...' : '待機 / 停止中')}
               {compState === 'moving' && '移動中...'}
               {compState === 'done' && '完了'}
             </span>
