@@ -1,0 +1,6 @@
+{
+  "name": "CSS Motion Lab",
+  "description": "CSSの transform と transition をインタラクティブに学べる教材兼CSSジェネレーター",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
