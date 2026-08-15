@@ -55,3 +55,5 @@ npm run build
 
 ## 制約事項
 - 今回は `@keyframes` によるフレームアニメーションや複雑なタイムライン制御、3D transformではなく、実務で最も頻繁に使用される `transform` と `transition` による「1要素の変形」と「2要素の自然な連動」に特化しています。
+
+*Enjoy learning CSS animations with CSS Motion Lab!*
