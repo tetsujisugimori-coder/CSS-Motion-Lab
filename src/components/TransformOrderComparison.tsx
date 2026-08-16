@@ -5,7 +5,7 @@ export const TransformOrderComparison: React.FC = () => {
   const [isTriggered, setIsTriggered] = useState(false);
 
   return (
-    <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-6">
+    <div id="transform-order-section" className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-6 scroll-mt-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
         <div className="flex items-center space-x-2">
           <ArrowRightLeft className="w-4 h-4 text-indigo-400" />

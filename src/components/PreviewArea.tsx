@@ -79,9 +79,11 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
   const computed = computeMotion(transform, transition, companion);
   const easingVal = getEasingValue(transition);
   const effDuration = reducedMotion ? 0.01 : transition.duration;
-  const mainTransition = `transform ${effDuration}s ${easingVal} ${transition.delay}s`;
+  const effDelay = reducedMotion ? 0 : transition.delay;
+  const effCompDelay = reducedMotion ? 0 : companion.delay;
+  const mainTransition = `transform ${effDuration}s ${easingVal} ${effDelay}s`;
   const compTransition = `transform ${effDuration}s ${easingVal} ${
-    transition.delay + companion.delay
+    effDelay + effCompDelay
   }s, opacity ${effDuration}s ease`;
 
   // アクティブ判定

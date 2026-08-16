@@ -120,11 +120,9 @@ export function generateCodePackage(
 }
 
 /* 2. 主役カード（通常状態）
-   transition: property duration timing-function delay;
-   - property: 変化させる対象（transform）
-   - duration: 変化にかかる時間 (${transition.duration}s)
-   - timing-function: 速度カーブ (${computed.easingVal})
-   - delay: 動き始めるまでの待ち時間 (${transition.delay}s) */
+   - transform: 通常状態の見た目（原点）
+   - transition: 到着点までの「時間・速度・待ち時間」の設計
+     property (transform) / duration (${transition.duration}s) / timing-function (${computed.easingVal}) / delay (${transition.delay}s) */
 .main-card {
   width: 210px;
   height: 170px;
@@ -143,7 +141,8 @@ export function generateCodePackage(
   will-change: transform;
 }
 
-/* 3. 主役カード（アクティブ状態／到着点） */
+/* 3. 主役カード（アクティブ状態／変形の到着点）
+   - transform: 「どこへ・どんな形へ変えるか」の到着点を指定 */
 ${cssSelectorMainActive} {
   transform: translateX(${transform.translateX}px) translateY(${transform.translateY}px) rotate(${transform.rotate}deg) scale(${transform.scale}) skewX(${transform.skewX}deg);
 }
@@ -173,9 +172,12 @@ ${cssSelectorCompActive} {
 
 /* 6. アクセシビリティ：モーション軽減設定への配慮 */
 @media (prefers-reduced-motion: reduce) {
-  .main-card, .companion-card {
+  .main-card,
+  .companion-card {
     transition-duration: 0.01s !important;
+    transition-delay: 0s !important;
     animation-duration: 0.01s !important;
+    animation-delay: 0s !important;
   }
 }`;
 
@@ -193,17 +195,27 @@ mainCard.addEventListener('click', () => {
     js = `// Preview モード: 状態の変化を自動再生・再トリガーする仕組み
 const motionPair = document.querySelector('.motion-pair');
 const mainCard = motionPair.querySelector('.main-card');
-let timer = null;
+let timerId = null;
+let rafId = null;
 
 function playPreview() {
-  if (timer) clearTimeout(timer);
+  // 再生をやり直すときは、古いtimerと描画予約(requestAnimationFrame)を解除する
+  if (timerId) {
+    clearTimeout(timerId);
+    timerId = null;
+  }
+  if (rafId) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
   motionPair.classList.remove('is-active');
   
   // 次のフレームでクラスを再付与して確実にアニメーションを最初から再生
-  requestAnimationFrame(() => {
+  rafId = requestAnimationFrame(() => {
     motionPair.classList.add('is-active');
-    timer = setTimeout(() => {
+    timerId = setTimeout(() => {
       motionPair.classList.remove('is-active');
+      timerId = null;
     }, ${Math.round(totalTimeMs)});
   });
 }

@@ -88,7 +88,7 @@ export const EasingVisualizer: React.FC<EasingVisualizerProps> = ({ transition }
             <line x1="0" y1="200" x2={cx1} y2={cy1} stroke="#6366f1" strokeWidth="1" strokeDasharray="2 2" />
             <line x1="200" y1="0" x2={cx2} y2={cy2} stroke="#6366f1" strokeWidth="1" strokeDasharray="2 2" />
             <circle cx={cx1} cy={cy1} r="4" fill="#a5b4fc" />
-            <circle cx={cx2} cy={cx2} r="4" fill="#a5b4fc" />
+            <circle cx={cx2} cy={cy2} r="4" fill="#a5b4fc" />
           </svg>
         </div>
 

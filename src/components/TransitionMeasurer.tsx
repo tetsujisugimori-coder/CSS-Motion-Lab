@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Play, Activity } from 'lucide-react';
 import { TransitionState, CompanionState } from '../types';
 import { getEasingValue } from '../utils/motionModel';
@@ -17,9 +17,16 @@ export const TransitionMeasurer: React.FC<TransitionMeasurerProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [mainState, setMainState] = useState<'idle' | 'moving' | 'done'>('idle');
   const [compState, setCompState] = useState<'idle' | 'moving' | 'done'>('idle');
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+
+  const clearAllTimeouts = () => {
+    timeoutsRef.current.forEach((t) => clearTimeout(t));
+    timeoutsRef.current = [];
+  };
 
   const triggerPlay = () => {
     if (reducedMotion) return;
+    clearAllTimeouts();
     setIsPlaying(true);
     setMainState('idle');
     setCompState('idle');
@@ -49,24 +56,22 @@ export const TransitionMeasurer: React.FC<TransitionMeasurerProps> = ({
       setIsPlaying(false);
     }, maxTotalMs);
 
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-      clearTimeout(tEnd);
-    };
+    timeoutsRef.current = [t1, t2, t3, t4, tEnd];
   };
 
   useEffect(() => {
+    clearAllTimeouts();
     if (!reducedMotion) {
-      const cleanup = triggerPlay();
-      return cleanup;
+      triggerPlay();
     } else {
+      setIsPlaying(false);
       setMainState('done');
       setCompState('done');
     }
-  }, [transition.duration, transition.delay, transition.easing, transition.customBezier, companion.delay]);
+    return () => {
+      clearAllTimeouts();
+    };
+  }, [transition.duration, transition.delay, transition.easing, transition.customBezier, companion.delay, reducedMotion]);
 
   const easingStr = getEasingValue(transition);
   const effDuration = reducedMotion ? 0.01 : transition.duration;

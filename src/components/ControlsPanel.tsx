@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sliders, Move, Clock, Users, AlertCircle, HelpCircle } from 'lucide-react';
+import { Sliders, Move, Clock, Users, AlertCircle, HelpCircle, ArrowRightLeft, ArrowDown } from 'lucide-react';
 import { TransformState, TransitionState, CompanionState } from '../types';
 import { parseAndValidateCubicBezier } from '../utils/motionModel';
 import { TransitionTimeline } from './TransitionTimeline';
@@ -37,6 +37,13 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
 
   const handleCompanionChange = <K extends keyof CompanionState>(key: K, val: CompanionState[K]) => {
     onChangeCompanion({ ...companion, [key]: val });
+  };
+
+  const scrollToOrderSection = () => {
+    const el = document.getElementById('transform-order-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const bezierCheck = parseAndValidateCubicBezier(transition.customBezier);
@@ -97,110 +104,204 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-                主役カードの変形パラメータ
+                <Move className="w-3.5 h-3.5 text-indigo-400" />
+                Transformは何を表現する仕組みか
               </h3>
-              <span className="text-[10px] text-zinc-500">translate / rotate / scale</span>
+              <span className="text-[10px] text-zinc-500">どこへ・どんな形へ変えるか（到着点）</span>
             </div>
 
-            {/* X Move */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-300 font-medium flex items-center gap-1">
-                  X移動 (translateX)
-                  <span className="text-[10px] text-zinc-500">横方向</span>
-                </span>
-                <span className="font-mono text-indigo-400 font-semibold">{transform.translateX}px</span>
+            {/* 1. Transformとは何か 導入展示 */}
+            <div className="bg-gradient-to-br from-indigo-950/50 to-zinc-950 border border-indigo-500/30 rounded-2xl p-4 space-y-3 text-xs text-indigo-100">
+              <div className="flex items-center space-x-2 font-bold text-indigo-300 text-sm">
+                <HelpCircle className="w-4 h-4 text-indigo-400" />
+                <span>Transformの本質：変形と「到着点」の設計</span>
               </div>
-              <input
-                type="range"
-                min={-120}
-                max={120}
-                step={2}
-                value={transform.translateX}
-                onChange={(e) => handleTransformChange('translateX', Number(e.target.value))}
-                className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
-              />
+              <p className="text-zinc-300 leading-relaxed text-[11px]">
+                <strong className="text-white">Transform</strong> は、要素の見た目の「位置（translate）・角度（rotate）・大きさ（scale）・傾き（skew）」を変える仕組みです。
+                周囲のHTMLレイアウトを押しのけず（他の要素の配置を崩さず）、その要素の見た目だけを高速かつ軽快に変形させます。
+              </p>
+
+              {/* Flow diagram */}
+              <div className="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80 font-mono text-[10px] text-zinc-300 flex flex-wrap items-center justify-center gap-2">
+                <span className="px-2 py-1 bg-zinc-900 rounded border border-zinc-700 text-zinc-200">通常状態</span>
+                <span className="text-indigo-400">↓ transform</span>
+                <span className="px-2 py-1 bg-indigo-950 rounded border border-indigo-500/40 text-indigo-200">位置・角度・大きさ・傾きが変化</span>
+                <span className="text-indigo-400">↓ transitionを加える</span>
+                <span className="px-2.5 py-1 bg-indigo-600/30 rounded border border-indigo-500 text-indigo-200 font-bold">時間をかけて自然に変化</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-zinc-300 pt-1">
+                <div className="bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+                  <strong className="text-white block mb-0.5">🎯 動きそのものではない（到着点）</strong>
+                  Transformは「どんな形・位置に変わるか」という到着点を決めるだけで、時間は持ちません。
+                </div>
+                <div className="bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+                  <strong className="text-white block mb-0.5">✨ Transitionとの組み合わせ</strong>
+                  Transitionを組み合わせることで、カードの浮き上がりやボタンの押し込みなど、UIの心地よい反応が生まれます。
+                </div>
+              </div>
             </div>
 
-            {/* Y Move */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-300 font-medium flex items-center gap-1">
-                  Y移動 (translateY)
-                  <span className="text-[10px] text-zinc-500">負の値で上へ</span>
-                </span>
-                <span className="font-mono text-indigo-400 font-semibold">{transform.translateY}px</span>
+            {/* 2. 現在のTransform設定要約 */}
+            <div className="bg-zinc-950/70 border border-zinc-800 rounded-xl p-3 space-y-1.5 text-xs">
+              <div className="flex items-center justify-between text-zinc-400">
+                <span className="font-medium">現在の変形パラメータ要約:</span>
+                <span className="text-[10px] text-indigo-400 font-mono">アクティブ時の到着点</span>
               </div>
-              <input
-                type="range"
-                min={-120}
-                max={120}
-                step={2}
-                value={transform.translateY}
-                onChange={(e) => handleTransformChange('translateY', Number(e.target.value))}
-                className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
-              />
+              <div className="bg-zinc-900/90 px-3 py-2 rounded-lg border border-zinc-800 font-mono text-[11px] text-zinc-200 flex flex-wrap gap-x-3 gap-y-1">
+                <span><strong className="text-indigo-400">X:</strong> {transform.translateX}px</span>
+                <span className="text-zinc-600">｜</span>
+                <span><strong className="text-indigo-400">Y:</strong> {transform.translateY}px</span>
+                <span className="text-zinc-600">｜</span>
+                <span><strong className="text-indigo-400">回転:</strong> {transform.rotate}°</span>
+                <span className="text-zinc-600">｜</span>
+                <span><strong className="text-indigo-400">拡大:</strong> {transform.scale}</span>
+                <span className="text-zinc-600">｜</span>
+                <span><strong className="text-indigo-400">傾き:</strong> {transform.skewX}°</span>
+              </div>
             </div>
 
-            {/* Rotate */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-300 font-medium flex items-center gap-1">
-                  回転 (rotate)
-                  <span className="text-[10px] text-zinc-500">角度deg</span>
-                </span>
-                <span className="font-mono text-indigo-400 font-semibold">{transform.rotate}°</span>
+            {/* 3. 各Transform操作の調整スライダー */}
+            <div className="space-y-4 bg-zinc-950/60 p-4 rounded-xl border border-zinc-800">
+              <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                <span>変形パラメータの操作</span>
+                <span className="text-[10px] text-zinc-500 lowercase">translateX / translateY / rotate / scale / skewX</span>
+              </h4>
+
+              {/* X Move */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-300 font-medium flex items-center gap-1">
+                    X移動 (translateX)
+                    <span className="text-[10px] text-zinc-500">横方向のずれ</span>
+                  </span>
+                  <span className="font-mono text-indigo-400 font-semibold">{transform.translateX}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={-120}
+                  max={120}
+                  step={2}
+                  value={transform.translateX}
+                  onChange={(e) => handleTransformChange('translateX', Number(e.target.value))}
+                  className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
+                />
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  横方向に見た目をずらします（正の値で右、負の値で左）。タブインジケータ移動や横スライドインに活用します。
+                </p>
               </div>
-              <input
-                type="range"
-                min={-180}
-                max={180}
-                step={1}
-                value={transform.rotate}
-                onChange={(e) => handleTransformChange('rotate', Number(e.target.value))}
-                className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
-              />
+
+              {/* Y Move */}
+              <div className="space-y-1.5 pt-2 border-t border-zinc-800/80">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-300 font-medium flex items-center gap-1">
+                    Y移動 (translateY)
+                    <span className="text-[10px] text-zinc-500">縦方向のずれ（負で上）</span>
+                  </span>
+                  <span className="font-mono text-indigo-400 font-semibold">{transform.translateY}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={-120}
+                  max={120}
+                  step={2}
+                  value={transform.translateY}
+                  onChange={(e) => handleTransformChange('translateY', Number(e.target.value))}
+                  className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
+                />
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  縦方向に見た目をずらします（負の値で上、正の値で下）。カードの浮き上がり（-4px〜-8px）やボタン押し込み（+2px）に頻出です。
+                </p>
+              </div>
+
+              {/* Rotate */}
+              <div className="space-y-1.5 pt-2 border-t border-zinc-800/80">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-300 font-medium flex items-center gap-1">
+                    回転 (rotate)
+                    <span className="text-[10px] text-zinc-500">中心基準の角度</span>
+                  </span>
+                  <span className="font-mono text-indigo-400 font-semibold">{transform.rotate}°</span>
+                </div>
+                <input
+                  type="range"
+                  min={-180}
+                  max={180}
+                  step={1}
+                  value={transform.rotate}
+                  onChange={(e) => handleTransformChange('rotate', Number(e.target.value))}
+                  className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
+                />
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  要素の中心を基準に回転させます（正の値で時計回り、負の値で反時計回り）。アコーディオン矢印の反転（180°）やローディング演出に使います。
+                </p>
+              </div>
+
+              {/* Scale */}
+              <div className="space-y-1.5 pt-2 border-t border-zinc-800/80">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-300 font-medium flex items-center gap-1">
+                    拡大縮小 (scale)
+                    <span className="text-[10px] text-zinc-500">大きさの倍率（1が等倍）</span>
+                  </span>
+                  <span className="font-mono text-indigo-400 font-semibold">{transform.scale}</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={1.8}
+                  step={0.02}
+                  value={transform.scale}
+                  onChange={(e) => handleTransformChange('scale', Number(e.target.value))}
+                  className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
+                />
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  基準サイズを 1 とし拡大・縮小します（1より大きいと拡大、小さいと縮小）。ホバー時の注目喚起（1.02〜1.05）やダイアログ出現に使います。
+                </p>
+              </div>
+
+              {/* SkewX */}
+              <div className="space-y-1.5 pt-2 border-t border-zinc-800/80">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-300 font-medium flex items-center gap-1">
+                    傾き (skewX)
+                    <span className="text-[10px] text-zinc-500">水平方向の傾斜角度</span>
+                  </span>
+                  <span className="font-mono text-indigo-400 font-semibold">{transform.skewX}°</span>
+                </div>
+                <input
+                  type="range"
+                  min={-30}
+                  max={30}
+                  step={1}
+                  value={transform.skewX}
+                  onChange={(e) => handleTransformChange('skewX', Number(e.target.value))}
+                  className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
+                />
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  横方向に傾けて勢いや遠近感を作ります。多用すると可読性を損なうため、スピード感のあるバッジ等に控えめにアクセントとして使います。
+                </p>
+              </div>
             </div>
 
-            {/* Scale */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-300 font-medium flex items-center gap-1">
-                  拡大縮小 (scale)
-                  <span className="text-[10px] text-zinc-500">倍率</span>
-                </span>
-                <span className="font-mono text-indigo-400 font-semibold">{transform.scale}</span>
+            {/* 4. Transform順序に関する案内 & 比較展示へのリンク */}
+            <div className="bg-zinc-950/80 p-4 rounded-xl border border-zinc-800 space-y-2.5 text-xs text-zinc-300">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1.5 font-bold text-zinc-200 text-[11px]">
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>関数の記述順序で結果が変わる点に注意</span>
+                </div>
+                <button
+                  onClick={scrollToOrderSection}
+                  className="inline-flex items-center space-x-1 text-[10px] font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-950/40 hover:bg-indigo-950/70 border border-indigo-500/30 px-2 py-1 rounded-lg transition"
+                >
+                  <span>順序比較展示へ</span>
+                  <ArrowDown className="w-3 h-3" />
+                </button>
               </div>
-              <input
-                type="range"
-                min={0.5}
-                max={1.8}
-                step={0.02}
-                value={transform.scale}
-                onChange={(e) => handleTransformChange('scale', Number(e.target.value))}
-                className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
-              />
-            </div>
-
-            {/* SkewX */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-300 font-medium flex items-center gap-1">
-                  傾き (skewX)
-                  <span className="text-[10px] text-zinc-500">遠近感</span>
-                </span>
-                <span className="font-mono text-indigo-400 font-semibold">{transform.skewX}°</span>
-              </div>
-              <input
-                type="range"
-                min={-30}
-                max={30}
-                step={1}
-                value={transform.skewX}
-                onChange={(e) => handleTransformChange('skewX', Number(e.target.value))}
-                className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg cursor-pointer"
-              />
+              <p className="text-[11px] text-zinc-400 leading-relaxed">
+                <code>transform</code> は複数の関数を連結できます。例えば <code>translate → rotate</code> と <code>rotate → translate</code> では、同じ数値でも座標軸の回転順序が異なり、全く異なる軌道を描きます。画面下部の比較展示で実際の軌道の違いを確認できます。
+              </p>
             </div>
           </div>
         )}
