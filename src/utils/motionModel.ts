@@ -210,9 +210,14 @@ function playPreview() {
   }
   motionPair.classList.remove('is-active');
   
-  // 次のフレームでクラスを再付与して確実にアニメーションを最初から再生
+  // 通常状態（クラスが外れた状態）をブラウザに強制的に確定(reflow)させ、
+  // 次の付与でCSS transitionが確実に最初から再実行されるようにする
+  void motionPair.offsetWidth;
+
   rafId = requestAnimationFrame(() => {
+    rafId = null;
     motionPair.classList.add('is-active');
+
     timerId = setTimeout(() => {
       motionPair.classList.remove('is-active');
       timerId = null;

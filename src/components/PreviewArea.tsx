@@ -23,12 +23,17 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const reducedMotion = useReducedMotion();
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
+
+  const clearPreviewTimers = () => {
+    timersRef.current.forEach((t) => clearTimeout(t));
+    timersRef.current = [];
+  };
 
   // Mode切り替え時にクリック状態やプレビュー状態をリセット
   useEffect(() => {
     setIsClicked(false);
-    if (timerRef.current) clearTimeout(timerRef.current);
+    clearPreviewTimers();
 
     if (mode === 'preview' && !reducedMotion) {
       triggerPreviewCycle();
@@ -37,7 +42,7 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
     }
 
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      clearPreviewTimers();
     };
   }, [mode, reducedMotion]);
 
@@ -45,12 +50,23 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
   useEffect(() => {
     if (mode === 'preview' && !reducedMotion) {
       triggerPreviewCycle();
+    } else {
+      clearPreviewTimers();
+      setIsPlayingPreview(false);
     }
-  }, [transform, transition, companion]);
+
+    return () => {
+      clearPreviewTimers();
+    };
+  }, [transform, transition, companion, mode, reducedMotion]);
 
   const triggerPreviewCycle = () => {
-    if (reducedMotion) return;
-    if (timerRef.current) clearTimeout(timerRef.current);
+    if (reducedMotion) {
+      clearPreviewTimers();
+      setIsPlayingPreview(false);
+      return;
+    }
+    clearPreviewTimers();
 
     setIsPlayingPreview(false);
     // 次のフレームで再トリガーして確実にアニメーションをリセット
@@ -60,12 +76,13 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
         (transition.duration + Math.max(transition.delay, transition.delay + companion.delay) + 0.4) *
         1000;
 
-      timerRef.current = setTimeout(() => {
+      const t2 = setTimeout(() => {
         setIsPlayingPreview(false);
       }, totalTimeMs);
+      timersRef.current.push(t2);
     }, 20);
 
-    return () => clearTimeout(t1);
+    timersRef.current.push(t1);
   };
 
   const handleMainClick = () => {
@@ -146,7 +163,11 @@ export const PreviewArea: React.FC<PreviewAreaProps> = ({
       {/* Guide Banner */}
       <div className="mb-6 bg-indigo-950/30 border border-indigo-500/20 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-indigo-200">
         <div className="flex items-center space-x-2">
-          <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shrink-0"></span>
+          <span
+            className={`w-2 h-2 rounded-full bg-indigo-400 shrink-0 ${
+              reducedMotion ? '' : 'animate-pulse'
+            }`}
+          ></span>
           <span>
             {mode === 'hover' && '1. カードペア領域にマウスを乗せる（Hover）　2. 左の値を変える　3. 下部からCSSをコピー'}
             {mode === 'click' && '1. 主役カードをクリック（またはEnter/Space）して状態をトグル'}

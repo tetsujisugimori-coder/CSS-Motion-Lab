@@ -42,7 +42,10 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
   const scrollToOrderSection = () => {
     const el = document.getElementById('transform-order-section');
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.scrollIntoView({
+        behavior: reducedMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
     }
   };
 
