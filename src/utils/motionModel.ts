@@ -198,7 +198,15 @@ const mainCard = motionPair.querySelector('.main-card');
 let timerId = null;
 let rafId = null;
 
+// アクセシビリティ：OSの「動きを減らす」設定（prefers-reduced-motion）を判定
+const prefersReducedMotion =
+  window.matchMedia &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 function playPreview() {
+  // モーション軽減を希望する利用者には、意図しない自動・連続再生を行わない
+  if (prefersReducedMotion) return;
+
   // 再生をやり直すときは、古いtimerと描画予約(requestAnimationFrame)を解除する
   if (timerId) {
     clearTimeout(timerId);
@@ -225,11 +233,18 @@ function playPreview() {
   });
 }
 
+// 読み込み時およびクリック時：モーション軽減が有効でない場合のみ再生
 window.addEventListener('DOMContentLoaded', () => {
-  playPreview();
+  if (!prefersReducedMotion) {
+    playPreview();
+  }
 });
 
-mainCard.addEventListener('click', playPreview);`;
+mainCard.addEventListener('click', () => {
+  if (!prefersReducedMotion) {
+    playPreview();
+  }
+});`;
   } else {
     js = `// Hover モード: CSSの :hover 疑似クラスにより、マウスオーバーで自動的にトリガーされます。`;
   }
